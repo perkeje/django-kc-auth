@@ -1,0 +1,44 @@
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "wheel",
+    "twine",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-kc-auth"
+version = "0.1.17"
+authors = [
+  { name="Juraj Perić", email="juraj.peric@gmail.com" },
+]
+description = "A comprehensive Django package for Keycloak authentication integration, providing seamless SSO, session management, and user synchronization between Django and Keycloak."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["django", "keycloak", "authentication", "sso", "session-management"]
+classifiers = [
+    "Framework :: Django",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration :: Authentication/Directory"
+]
+
+dependencies = [
+    "Django>=5.0.1",
+    "djangorestframework>=3.15.2",
+    "python-keycloak>=4.5.0",
+    "jwt>=1.3.1"
+]
+
+[project.urls]
+Homepage = "https://github.com/perkeje/django-kc-auth"
+Issues = "https://github.com/perkeje/django-kc-auth/issues"

@@ -7,12 +7,12 @@ from keycloak.exceptions import (
 )
 
 BACKCHANNEL_LOGOUT_EVENT_URL = "http://schemas.openid.net/event/backchannel-logout"
-REALM_URL = f"{settings.KEYCLOAK_SERVER_URL}/realms/{settings.KEYCLOAK_REALM}"
+REALM_URL = f"{settings.KC_SERVER_URL}/realms/{settings.KC_REALM}"
 
 
 keycloak_connection = KeycloakOpenIDConnection(
-    server_url=settings.KEYCLOAK_SERVER_URL,
-    realm_name=settings.KEYCLOAK_REALM,
+    server_url=settings.KC_SERVER_URL,
+    realm_name=settings.KC_REALM,
     user_realm_name="master",
     username="admin",
     password="admin",
@@ -20,10 +20,10 @@ keycloak_connection = KeycloakOpenIDConnection(
 )
 
 keycloak_openid = KeycloakOpenID(
-    server_url=settings.KEYCLOAK_SERVER_URL,
-    realm_name=settings.KEYCLOAK_REALM,
-    client_id=settings.KEYCLOAK_CLIENT_ID,
-    client_secret_key=settings.KEYCLOAK_CLIENT_SECRET,
+    server_url=settings.KC_SERVER_URL,
+    realm_name=settings.KC_REALM,
+    client_id=settings.KC_CLIENT_ID,
+    client_secret_key=settings.KC_CLIENT_SECRET,
 )
 
 
@@ -42,7 +42,7 @@ def get_logout_url(id_token, post_logout_redirect_uri):
         f"{REALM_URL}/protocol/openid-connect/logout"
         f"?id_token_hint={id_token}"
         f"&post_logout_redirect_uri={post_logout_redirect_uri}"
-        f"&client_id={settings.KEYCLOAK_CLIENT_ID}"
+        f"&client_id={settings.KC_CLIENT_ID}"
     )
 
 

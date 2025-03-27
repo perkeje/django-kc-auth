@@ -60,7 +60,7 @@ class KeycloakBackend(BaseBackend):
 
             KeycloakUser.objects.get_or_create(sub=sub, user=user)
 
-            user.backend = "myapp.backends.KeycloakBackend"
+            user.backend = "django_kc_auth.backends.KeycloakBackend"
             return user
 
         except Exception as e:

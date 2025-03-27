@@ -16,9 +16,8 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from keycloak import KeycloakError
-
+from rest_framework import permissions
 from rest_framework.views import APIView
-from rest_framework import permissions 
 
 from .keycloak_openid_config import (
     BACKCHANNEL_LOGOUT_EVENT_URL,
@@ -47,9 +46,9 @@ class LoginView(View):
         Returns:
             HttpResponseRedirect: A response redirecting the user to the Keycloak authentication URL.
         """
-        next_url = request.GET.get("next", "/")
+        next_url = request.GET.get("next", getattr(settings, "KC_SUCCESSFUL_LOGIN_REDIRECT", reverse("home")))
         server_url = request.build_absolute_uri("/")[:-1]
-        callback_url = f"{server_url}{reverse("callback")}"
+        callback_url = f"{server_url}{reverse("kc_auth_callback")}"
 
         auth_url = keycloak_openid.auth_url(
             redirect_uri=callback_url,
@@ -82,15 +81,15 @@ class CallbackView(View):
             HttpResponseRedirect: Redirects to the appropriate URL based on the state or home page.
         """
         code = request.GET.get("code")
-        state = request.GET.get("state", "")
+        state = request.GET.get("state")
         redirect_url = None
 
         if state:
             try:
                 redirect_url = urlsafe_base64_decode(state).decode("ascii")
             except Exception:
-                redirect_url = "home"
-
+                redirect_url = getattr(settings, "KC_SUCCESSFUL_LOGIN_REDIRECT", "home"),
+        print(redirect_url)
         redirect_url = redirect_url if redirect_url else "home"
         if not code:
             return redirect(redirect_url)
@@ -109,15 +108,24 @@ class CallbackView(View):
 
             user_info = keycloak_openid.userinfo(access_token)
         except KeycloakError:
-            messages.error(
-                request,
-                "Greška u preusmjeravanju s AAI. Pokušajte ponovno.",
-            )
+            redirect_error_message = getattr(settings,"KC_ERROR_MESSAGES",{}).get("redirect_error")
+            logger.error("Error redirecting user %s", callback_url)
+            if redirect_error_message:
+                messages.error(
+                    request,
+                    redirect_error_message,
+                )
             return redirect(redirect_url)
 
         user = authenticate(request, user_info=user_info)
         if not user:
-            messages.error(request, "Prijava nije uspjela. Pokušajte ponovno.")
+            login_failed_message = getattr(settings,"KC_ERROR_MESSAGES",{}).get("login_failed")
+            logger.error("Login in Django failed for user %s", user_info.get("sub"))
+            if login_failed_message:
+                messages.error(
+                    request,
+                    login_failed_message,
+                )
             return redirect(redirect_url)
 
         login(request, user)
@@ -153,18 +161,20 @@ class LogoutView(LoginRequiredMixin, View):
             HttpResponseRedirect: Redirects to the Keycloak logout URL or the homepage.
         """
         server_url = request.build_absolute_uri("/")[:-1]
-        post_logout_redirect_uri = f"{server_url}{reverse("homepage")}"
+        post_logout_redirect_uri = (
+            f"{server_url}{getattr(settings, "KC_LOGOUT_REDIRECT", reverse("home"))}"
+        )
         id_token = request.session.get("id_token")
 
         user = request.user.username
         logout(request)
-        logger.info("%s logged out", user.username)
+        logger.info("%s logged out", user)
 
         if not id_token:
             return redirect(post_logout_redirect_uri)
 
         redirect_url = get_logout_url(id_token, post_logout_redirect_uri)
-        logger.info("Redirecting %s to Keycloak logout URL")
+        logger.info("Redirecting %s to Keycloak logout URL",user)
 
         return redirect(redirect_url)
 
@@ -185,10 +195,16 @@ class RemoteLogoutView(LoginRequiredMixin, View):
         )
         keycloak_user = KeycloakUser.objects.filter(user=request.user).first()
         if not keycloak_user:
-            messages.error(
-                request,
-                "Korisnik nema AAI račun.",
+            logger.error(
+                "User with %s session not found.",
+                session_id,
             )
+            user_not_found_message = getattr(settings,"KC_ERROR_MESSAGES",{}).get("user_not_found")
+            if user_not_found_message: 
+                messages.error(
+                    request,
+                    user_not_found_message,
+                )
             return redirect(request.META.get("HTTP_REFERER", "/"))
         try:
             if keycloak_user.user == request.user:
@@ -207,10 +223,12 @@ class RemoteLogoutView(LoginRequiredMixin, View):
                 request.user.username,
                 str(e),
             )
-            messages.error(
-                request,
-                "Neuspjelo brisanje sesije.",
-            )
+            remote_logout_failed_message = getattr(settings,"KC_ERROR_MESSAGES",{}).get("remote_logout_failed")
+            if remote_logout_failed_message: 
+                messages.error(
+                    request,
+                    remote_logout_failed_message,
+                )
 
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
@@ -233,7 +251,7 @@ class LogoutListenerView(View):
 
         try:
             logout_token = instance.decode(
-                logout_token, settings.KEYCLOAK_VERIFYING_KEY, do_time_check=True
+                logout_token, settings.KC_VERIFYING_KEY, do_time_check=True
             )
             events = logout_token.get("events", {})
             iss = logout_token.get("iss", "")
@@ -298,10 +316,12 @@ def devices(request):
             str(e),
         )
         error = True
-    return render(request, template_name, {"session_data": session_data, "error":error})
+    return render(
+        request, template_name, {"session_data": session_data, "error": error}
+    )
 
 
-class StudentDetailView(APIView):
+class DevicesAPIView(APIView):
     permission_classes = (permissions.IsAuthenticated, permissions.IsAdminUser)
 
     def get(self, request):
@@ -323,19 +343,18 @@ class StudentDetailView(APIView):
         """
         session_data = []
         access_token = request.session.get("access_token")
-        
+
         if not access_token:
             logger.warning("Access token not found for user: %s", request.user.username)
             return JsonResponse(
-                {"error": True, "message": "Authentication required"}, 
-                status=401
+                {"error": True, "message": "Authentication required"}, status=401
             )
-        
+
         try:
             session_data = get_active_devices(access_token)
             logger.info("Retrieved devices for user: %s", request.user.username)
             return JsonResponse({"session_data": session_data, "error": False})
-        
+
         except KeycloakError as e:
             logger.error(
                 "Failed to fetch active devices for user %s: %s",
@@ -343,6 +362,6 @@ class StudentDetailView(APIView):
                 str(e),
             )
             return JsonResponse(
-                {"error": True, "message": "Failed to retrieve device information"}, 
-                status=500
+                {"error": True, "message": "Failed to retrieve device information"},
+                status=500,
             )
