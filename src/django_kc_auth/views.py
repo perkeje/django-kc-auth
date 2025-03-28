@@ -46,7 +46,9 @@ class LoginView(View):
         Returns:
             HttpResponseRedirect: A response redirecting the user to the Keycloak authentication URL.
         """
-        next_url = request.GET.get("next", getattr(settings, "KC_SUCCESSFUL_LOGIN_REDIRECT", reverse("home")))
+        next_url = request.GET.get(
+            "next", getattr(settings, "KC_SUCCESSFUL_LOGIN_REDIRECT", reverse("home"))
+        )
         server_url = request.build_absolute_uri("/")[:-1]
         callback_url = f"{server_url}{reverse("kc_auth_callback")}"
 
@@ -88,7 +90,9 @@ class CallbackView(View):
             try:
                 redirect_url = urlsafe_base64_decode(state).decode("ascii")
             except Exception:
-                redirect_url = getattr(settings, "KC_SUCCESSFUL_LOGIN_REDIRECT", "home"),
+                redirect_url = (
+                    getattr(settings, "KC_SUCCESSFUL_LOGIN_REDIRECT", "home"),
+                )
         print(redirect_url)
         redirect_url = redirect_url if redirect_url else "home"
         if not code:
@@ -108,7 +112,9 @@ class CallbackView(View):
 
             user_info = keycloak_openid.userinfo(access_token)
         except KeycloakError:
-            redirect_error_message = getattr(settings,"KC_ERROR_MESSAGES",{}).get("redirect_error")
+            redirect_error_message = getattr(settings, "KC_ERROR_MESSAGES", {}).get(
+                "redirect_error"
+            )
             logger.error("Error redirecting user %s", callback_url)
             if redirect_error_message:
                 messages.error(
@@ -119,7 +125,9 @@ class CallbackView(View):
 
         user = authenticate(request, user_info=user_info)
         if not user:
-            login_failed_message = getattr(settings,"KC_ERROR_MESSAGES",{}).get("login_failed")
+            login_failed_message = getattr(settings, "KC_ERROR_MESSAGES", {}).get(
+                "login_failed"
+            )
             logger.error("Login in Django failed for user %s", user_info.get("sub"))
             if login_failed_message:
                 messages.error(
@@ -174,7 +182,7 @@ class LogoutView(LoginRequiredMixin, View):
             return redirect(post_logout_redirect_uri)
 
         redirect_url = get_logout_url(id_token, post_logout_redirect_uri)
-        logger.info("Redirecting %s to Keycloak logout URL",user)
+        logger.info("Redirecting %s to Keycloak logout URL", user)
 
         return redirect(redirect_url)
 
@@ -199,8 +207,10 @@ class RemoteLogoutView(LoginRequiredMixin, View):
                 "User with %s session not found.",
                 session_id,
             )
-            user_not_found_message = getattr(settings,"KC_ERROR_MESSAGES",{}).get("user_not_found")
-            if user_not_found_message: 
+            user_not_found_message = getattr(settings, "KC_ERROR_MESSAGES", {}).get(
+                "user_not_found"
+            )
+            if user_not_found_message:
                 messages.error(
                     request,
                     user_not_found_message,
@@ -223,8 +233,10 @@ class RemoteLogoutView(LoginRequiredMixin, View):
                 request.user.username,
                 str(e),
             )
-            remote_logout_failed_message = getattr(settings,"KC_ERROR_MESSAGES",{}).get("remote_logout_failed")
-            if remote_logout_failed_message: 
+            remote_logout_failed_message = getattr(
+                settings, "KC_ERROR_MESSAGES", {}
+            ).get("remote_logout_failed")
+            if remote_logout_failed_message:
                 messages.error(
                     request,
                     remote_logout_failed_message,

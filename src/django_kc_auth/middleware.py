@@ -1,5 +1,5 @@
-import logging
 import datetime
+import logging
 import re
 
 from django.conf import settings
@@ -23,7 +23,7 @@ class AutoKeycloakLoginMiddleware:
         "/static/*",
         "/favicon.ico",
         "/__reload__/events/*",
-    ] + getattr(settings, "KC_SILENT_LOGOUT_IGNORED_ROUTES",[])
+    ] + getattr(settings, "KC_SILENT_LOGOUT_IGNORED_ROUTES", [])
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -34,9 +34,11 @@ class AutoKeycloakLoginMiddleware:
         now = datetime.datetime.now()
         last_attempt_valid = True
         if last_attempt:
-            last_attempt = datetime.datetime.strptime(last_attempt, '%Y-%m-%d %H:%M:%S')
+            last_attempt = datetime.datetime.strptime(last_attempt, "%Y-%m-%d %H:%M:%S")
             diff = now - last_attempt
-            if diff.total_seconds() < getattr(settings, "KC_SILENT_LOGIN_TIMEOUT_SECONDS",3):
+            if diff.total_seconds() < getattr(
+                settings, "KC_SILENT_LOGIN_TIMEOUT_SECONDS", 3
+            ):
                 last_attempt_valid = False
 
         if (
@@ -45,7 +47,8 @@ class AutoKeycloakLoginMiddleware:
             and not self.is_ignored(request.path)
             and not request.session.get("soft_logout", None)
             and last_attempt_valid
-            and login_attempts < getattr(settings, "KC_SILENT_LOGIN_ALLOWED_ATTEMPTS",5)
+            and login_attempts
+            < getattr(settings, "KC_SILENT_LOGIN_ALLOWED_ATTEMPTS", 5)
         ):
             logger.info("Silent authentication attempt.")
 
@@ -63,7 +66,7 @@ class AutoKeycloakLoginMiddleware:
                 + "&prompt=none"
             )
             request.session["kc_login_attempts"] = login_attempts + 1
-            request.session["kc_last_attempt_at"] = now.strftime('%Y-%m-%d %H:%M:%S')
+            request.session["kc_last_attempt_at"] = now.strftime("%Y-%m-%d %H:%M:%S")
             response = redirect(auth_url)
             return response
 
@@ -71,6 +74,6 @@ class AutoKeycloakLoginMiddleware:
 
     def is_ignored(self, path):
         for pattern in self.ignored_routes:
-            if re.search(pattern,path):
+            if re.search(pattern, path):
                 return True
         return False
