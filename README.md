@@ -64,6 +64,15 @@ urlpatterns = [
 |/devices/|devices|kc_auth_devices|
 |/api/devices/|DevicesAPIView|kc_auth_api_devices|
 
+## Backend
+Add this backend to your `AUTHENTICATION_BACKENDS`. You can also use your own adaptaion. Be sure to check how it is implemented here to override it.
+```python
+AUTHENTICATION_BACKENDS = [
+    "django_kc_auth.backends.KeycloakBackend",
+    # ... other backends
+]
+```
+
 ## Customization Options
 **URL Paths**
 
@@ -108,12 +117,14 @@ Silent authentication allows automatic login for users with active Keycloak sess
 
 **To enable this feature:**
 
-1. Add the Keycloak backend to your authentication backends:
+1. Add the Keycloak middleware to your middlewares:
 
 ```python
-AUTHENTICATION_BACKENDS = [
-    "django_kc_auth.backends.KeycloakBackend",
-    # ... other backends
+MIDDLEWARE = [
+    #... previous, needs to go after:
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_kc_auth.middleware.AutoKeycloakLoginMiddleware",
+    # ...other
 ]
 ```
 2. Configure silent login settings (optional):
@@ -127,6 +138,17 @@ KC_SILENT_LOGOUT_IGNORED_ROUTES = [   # Routes to ignore for silent login
     "/static/*",
 ]
 ```
+3. Soft logout
+If you are using soft logout(logout only from django app but not from keycloak), you should set `request.session["soft_logout"] = True` after logging out.
+```python
+class SoftLogoutView(LoginRequiredMixin, View):
+    def post(self, request):
+        logout(request)
+        request.session["soft_logout"] = True
+        return redirect("home")
 
+```
+## Devices
+You can fetch devices and applications attached to current session with devices. There are API call and template return options. To use template option you need to put your `devices.html` template inside your root `TEMPLATE` directory.
 ## License
 MIT License
