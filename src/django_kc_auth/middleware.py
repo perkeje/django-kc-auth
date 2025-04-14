@@ -18,8 +18,8 @@ class AutoKeycloakLoginMiddleware:
     """
 
     ignored_routes = [
-        f"{reverse("kc_auth_logout-listener")}*",
-        f"{reverse("kc_auth_callback")}*",
+        f"{reverse('kc_auth_logout-listener')}*",
+        f"{reverse('kc_auth_callback')}*",
         "/static/*",
         "/favicon.ico",
         "/__reload__/events/*",
@@ -53,7 +53,7 @@ class AutoKeycloakLoginMiddleware:
             logger.info("Silent authentication attempt.")
 
             server_url = request.build_absolute_uri("/")[:-1]
-            callback_url = f"{server_url}{reverse("kc_auth_callback")}"
+            callback_url = f"{server_url}{reverse('kc_auth_callback')}"
 
             auth_url = (
                 keycloak_openid.auth_url(

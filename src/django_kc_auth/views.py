@@ -51,7 +51,7 @@ class LoginView(View):
             "next", getattr(settings, "KC_SUCCESSFUL_LOGIN_REDIRECT", "/")
         )
         server_url = request.build_absolute_uri("/")[:-1]
-        callback_url = f"{server_url}{reverse("kc_auth_callback")}"
+        callback_url = f"{server_url}{reverse('kc_auth_callback')}"
 
         auth_url = keycloak_openid.auth_url(
             redirect_uri=callback_url,
@@ -171,7 +171,7 @@ class LogoutView(LoginRequiredMixin, View):
         """
         server_url = request.build_absolute_uri("/")[:-1]
         post_logout_redirect_uri = (
-            f"{server_url}{getattr(settings, "KC_LOGOUT_REDIRECT", "/")}"
+            f"{server_url}{getattr(settings, 'KC_LOGOUT_REDIRECT', '/')}"
         )
         id_token = request.session.get("id_token")
 
