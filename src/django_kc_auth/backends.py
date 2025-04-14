@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import Group, User
 from django.db import transaction
@@ -34,7 +35,15 @@ class KeycloakBackend(BaseBackend):
         first_name = user_info.get("firstName")
         last_name = user_info.get("lastName")
         email = user_info.get("email")
-        groups = user_info.get("groups", [])
+
+        try:
+            roles = (
+                user_info.get("resource_access")
+                .get(settings.KC_CLIENT_ID)
+                .get("roles", [])
+            )
+        except:
+            roles = []
 
         if not username:
             logger.warning("Authentication failed: Missing username in user_info.")
@@ -44,17 +53,24 @@ class KeycloakBackend(BaseBackend):
             user, created = User.objects.get_or_create(username=username)
             if created:
                 logger.info("Created new user: %s", username)
-
-            user.set_unusable_password()
+                user.set_unusable_password()
             user.first_name = first_name or ""
             user.last_name = last_name or ""
             user.email = email or ""
-            user.is_staff = "employees" in groups
-            user.is_superuser = "admins" in groups
+            user.is_staff = "employees" in roles
+            user.is_superuser = "admins" in roles
+
+            kc_roles = settings.KC_ROLES
+            current_groups = [group.name for group in user.groups.all()]
+            current_groups = [
+                group for group in current_groups if group not in kc_roles
+            ]
+            roles = current_groups + roles
 
             required_groups = [
-                Group.objects.get_or_create(name=group_name)[0] for group_name in groups
+                Group.objects.get_or_create(name=group_name)[0] for group_name in roles
             ]
+
             user.groups.set(required_groups)
             user.save()
 

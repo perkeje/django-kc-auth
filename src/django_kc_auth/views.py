@@ -20,6 +20,7 @@ from rest_framework import permissions
 from rest_framework.views import APIView
 
 from .keycloak_openid_config import (
+    BACKCHANNEL_LOGOUT_EVENT_HTTPS_URL,
     BACKCHANNEL_LOGOUT_EVENT_URL,
     REALM_URL,
     delete_session,
@@ -267,7 +268,10 @@ class LogoutListenerView(View):
             )
             events = logout_token.get("events", {})
             iss = logout_token.get("iss", "")
-            if BACKCHANNEL_LOGOUT_EVENT_URL in events and REALM_URL == iss:
+            if (
+                BACKCHANNEL_LOGOUT_EVENT_URL in events
+                or BACKCHANNEL_LOGOUT_EVENT_HTTPS_URL in events
+            ) and REALM_URL == iss:
 
                 sid = logout_token.get("sid")
 

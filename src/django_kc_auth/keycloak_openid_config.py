@@ -7,6 +7,9 @@ from keycloak.exceptions import (
 )
 
 BACKCHANNEL_LOGOUT_EVENT_URL = "http://schemas.openid.net/event/backchannel-logout"
+BACKCHANNEL_LOGOUT_EVENT_HTTPS_URL = (
+    "https://schemas.openid.net/event/backchannel-logout"
+)
 REALM_URL = f"{settings.KC_SERVER_URL}/realms/{settings.KC_REALM}"
 
 

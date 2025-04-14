@@ -72,6 +72,15 @@ AUTHENTICATION_BACKENDS = [
     # ... other backends
 ]
 ```
+Also set default groups in settings if using default backend.
+```python
+KC_ROLES = [
+    "employees",
+    "admins",
+    # ...
+]
+```
+
 
 ## Customization Options
 **URL Paths**
