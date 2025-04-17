@@ -159,5 +159,24 @@ class SoftLogoutView(LoginRequiredMixin, View):
 ```
 ## Devices
 You can fetch devices and applications attached to current session with devices. There are API call and template return options. To use template option you need to put your `devices.html` template inside your root `TEMPLATE` directory.
+## Post logout
+You can use your custom post logout logic catching the signal.<br>
+Example:
+```python
+from django_kc_auth.signals import post_keycloak_login
+from django.dispatch import receiver
+
+@receiver(post_keycloak_login)
+def handle_post_login(sender, request, user, access_token, **kwargs):
+    # Your custom post-login logic here
+    user.profile.last_login_source = 'keycloak'
+    user.profile.save()
+    
+    # You can also perform other actions like:
+    # - Update user metadata
+    # - Sync user permissions from Keycloak roles
+    # - Record login analytics
+    # - Set up user-specific session data
+```
 ## License
 MIT License

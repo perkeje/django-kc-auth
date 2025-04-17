@@ -29,6 +29,7 @@ from .keycloak_openid_config import (
     keycloak_openid,
 )
 from .models import KeycloakSession, KeycloakUser
+from .signals import post_keycloak_login
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +154,13 @@ class CallbackView(View):
             )
         except Exception as e:
             logger.error("Failed to create Keycloak session record: %s", e)
+
+        post_keycloak_login.send(
+            sender=self.__class__,
+            request=request,
+            user=user,
+            access_token=access_token,
+        )
 
         return redirect(redirect_url)
 
