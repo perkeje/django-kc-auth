@@ -95,7 +95,6 @@ class CallbackView(View):
                 redirect_url = (
                     getattr(settings, "KC_SUCCESSFUL_LOGIN_REDIRECT", "home"),
                 )
-        print(redirect_url)
         redirect_url = redirect_url if redirect_url else "home"
         if not code:
             return redirect(redirect_url)
@@ -166,6 +165,7 @@ class CallbackView(View):
         return redirect(redirect_url)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class LogoutView(LoginRequiredMixin, View):
     def post(self, request):
         """
@@ -197,6 +197,7 @@ class LogoutView(LoginRequiredMixin, View):
         return redirect(redirect_url)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class RemoteLogoutView(LoginRequiredMixin, View):
     def post(self, request):
         """
