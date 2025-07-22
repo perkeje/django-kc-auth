@@ -113,11 +113,12 @@ class CallbackView(View):
             keycloak_session_id = token.get("session_state")
 
             user_info = keycloak_openid.userinfo(access_token)
-        except KeycloakError:
+        except KeycloakError as e:
             redirect_error_message = getattr(settings, "KC_ERROR_MESSAGES", {}).get(
                 "redirect_error"
             )
             logger.error("Error redirecting user %s", callback_url)
+            logger.error("Error: %s", e)
             if redirect_error_message:
                 messages.error(
                     request,
