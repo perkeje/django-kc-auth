@@ -42,3 +42,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/perkeje/django-kc-auth"
 Issues = "https://github.com/perkeje/django-kc-auth/issues"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+pythonpath = ["src", "."]
