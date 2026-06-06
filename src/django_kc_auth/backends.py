@@ -1,8 +1,9 @@
 import logging
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import BaseBackend
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
 from django.db import transaction
 
 from .models import KeycloakUser
@@ -50,6 +51,7 @@ class KeycloakBackend(BaseBackend):
             return None
 
         try:
+            User = get_user_model()
             user, created = User.objects.get_or_create(username=username)
             if created:
                 logger.info("Created new user: %s", username)
@@ -96,6 +98,6 @@ class KeycloakBackend(BaseBackend):
             A User object if found, or None otherwise.
         """
         try:
-            return User.objects.get(pk=user_id)
-        except User.DoesNotExist:
+            return get_user_model().objects.get(pk=user_id)
+        except get_user_model().DoesNotExist:
             return None
